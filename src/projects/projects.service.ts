@@ -1,6 +1,9 @@
 import { BadRequestException, ConflictException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import {
+  DuplicateMembershipError,
   DuplicateProjectNameError,
+  MembershipReferenceError,
+  type ProjectListOptions,
   PROJECTS_REPOSITORY,
   type ProjectsRepository,
 } from './projects.repository';
@@ -21,15 +24,40 @@ export class ProjectsService {
         name: input.name,
         description: input.description ?? '',
         status: input.status,
-      });
+      }, input.ownerId);
     } catch (error) {
       if (error instanceof DuplicateProjectNameError) this.nameConflict();
-      throw error;
+      if (error instanceof MembershipReferenceError) {
+        throw new NotFoundException({ errorCode: 'OWNER_NOT_FOUND', message: `User with id ${input.ownerId} was not found` });
+      }
+      this.handleMembershipError(error);
     }
   }
 
-  findAll() {
-    return this.repository.findAll();
+  async findAll(options: ProjectListOptions) {
+    const { data, total } = await this.repository.findAll(options);
+    const { page, size } = options;
+    const totalPages = Math.ceil(total / size);
+    return { data, meta: { page, size, total, totalPages, hasNextPage: page < totalPages, hasPreviousPage: page > 1 } };
+  }
+
+  async addMember(id: number, userId: number) {
+    await this.findOne(id);
+    try {
+      return await this.repository.addMember(id, userId);
+    } catch (error) {
+      this.handleMembershipError(error);
+    }
+  }
+
+  private handleMembershipError(error: unknown): never {
+    if (error instanceof DuplicateMembershipError) {
+      throw new ConflictException({ errorCode: 'MEMBERSHIP_ALREADY_EXISTS', message: 'Користувач уже є учасником проєкту' });
+    }
+    if (error instanceof MembershipReferenceError) {
+      throw new NotFoundException({ errorCode: 'MEMBERSHIP_REFERENCE_NOT_FOUND', message: 'Project or user was not found' });
+    }
+    throw error;
   }
 
   async findOne(id: number) {

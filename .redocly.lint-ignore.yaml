@@ -2,9 +2,6 @@ openapi.json:
   # No license has been declared for this repository.
   info-license:
     - '#/info'
-  # Listing projects has no input validation or expected client error.
-  operation-4xx-response:
-    - '#/paths/~1projects/get/responses'
   # Required by the assignment; authentication is not implemented.
   no-unused-components:
     - '#/components/securitySchemes/bearerAuth'

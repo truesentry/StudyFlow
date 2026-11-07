@@ -25,11 +25,12 @@ test('Swagger UI and live OpenAPI match the checked-in contract and its examples
     assert.equal(document.components.securitySchemes.bearerAuth.scheme, 'bearer');
     assert.equal(document.externalDocs.url, 'https://github.com/truesentry/StudyFlow');
 
-    const collection = document.paths['/projects'];
-    const item = document.paths['/projects/{id}'];
+    const collection = document.paths['/api/projects'];
+    const item = document.paths['/api/projects/{id}'];
     const operations = [
-      [collection.post, [201, 400, 409, 500]],
-      [collection.get, [200, 500]],
+      [collection.post, [201, 400, 404, 409, 500]],
+      [collection.get, [200, 400, 500]],
+      [document.paths['/api/projects/{id}/memberships'].post, [201, 400, 404, 409, 500]],
       [item.get, [200, 400, 404, 500]],
       [item.patch, [200, 400, 404, 409, 500]],
       [item.delete, [204, 400, 404, 500]],
@@ -49,24 +50,24 @@ test('Swagger UI and live OpenAPI match the checked-in contract and its examples
       body: JSON.stringify(body),
     });
     const createBody = collection.post.requestBody.content['application/json'].examples.activeProject.value;
-    const created = await jsonRequest('POST', '/projects', createBody);
+    const created = await jsonRequest('POST', '/api/projects', createBody);
     assert.equal(created.status, 201);
     const project = await created.json();
     const createdExample = collection.post.responses[201].content['application/json'].example;
     const dynamicFields = { id: project.id, createdAt: project.createdAt };
     assert.deepEqual(project, { ...createdExample, ...dynamicFields });
 
-    const list = await fetch(base + '/projects');
+    const list = await fetch(base + '/api/projects');
     assert.equal(list.status, 200);
-    assert.deepEqual(await list.json(), [project]);
+    assert.deepEqual((await list.json()).data, [project]);
 
     const patchBody = item.patch.requestBody.content['application/json'].examples.completeProject.value;
-    const patched = await jsonRequest('PATCH', '/projects/' + project.id, patchBody);
+    const patched = await jsonRequest('PATCH', '/api/projects/' + project.id, patchBody);
     assert.equal(patched.status, 200);
     const updatedExample = item.patch.responses[200].content['application/json'].example;
     assert.deepEqual(await patched.json(), { ...updatedExample, ...dynamicFields });
 
-    const missing = await fetch(base + '/projects/10');
+    const missing = await fetch(base + '/api/projects/10');
     const missingExample = item.get.responses[404].content['application/json'].examples.PROJECT_NOT_FOUND.value;
     assert.equal(missing.status, 404);
     const error = await missing.json();

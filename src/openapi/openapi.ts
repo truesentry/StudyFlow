@@ -16,8 +16,13 @@ export function createOpenApiDocument(app: INestApplication) {
 
   const document = SwaggerModule.createDocument(app, config);
 
+  // Document canonical routes only; the old path remains an alias.
+  for (const path of Object.keys(document.paths)) {
+    if (path.startsWith('/projects')) delete document.paths[path];
+  }
+
   // Validation forbids extra request fields; serialization exposes only declared response fields.
-  for (const name of ['CreateProjectDto', 'UpdateProjectDto', 'ProjectResponseDto', 'HttpErrorResponseDto']) {
+  for (const name of ['CreateProjectDto', 'UpdateProjectDto', 'ProjectResponseDto', 'HttpErrorResponseDto', 'AddMembershipDto', 'ProjectPageDto', 'ProjectPageMetaDto', 'MembershipResponseDto']) {
     const schema = document.components?.schemas?.[name];
     if (!schema || '$ref' in schema) throw new Error(`Missing OpenAPI schema: ${name}`);
     schema.additionalProperties = false;
