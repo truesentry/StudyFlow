@@ -22,6 +22,7 @@ export function configureApplication(app: INestApplication): void {
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule);
   configureApplication(app);
+  app.enableShutdownHooks();
   await app.listen(process.env.PORT ?? 3000);
 }
 

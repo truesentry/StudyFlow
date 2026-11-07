@@ -1,9 +1,7 @@
 require('reflect-metadata');
 const assert = require('node:assert/strict');
 const { beforeEach, afterEach, test } = require('node:test');
-const { NestFactory } = require('@nestjs/core');
-const { AppModule } = require('../dist/app.module.js');
-const { configureApplication } = require('../dist/main.js');
+const { createTestApp } = require('./create-test-app.cjs');
 const { PROJECTS_REPOSITORY } = require('../dist/projects/projects.repository.js');
 const { ProjectsService } = require('../dist/projects/projects.service.js');
 const { CreateProjectDto } = require('../dist/projects/dto/create-project.dto.js');
@@ -15,8 +13,7 @@ const responseKeys = ['createdAt', 'description', 'id', 'name', 'status'];
 const errorKeys = ['errorCode', 'message', 'path', 'statusCode', 'timestamp', 'traceId'];
 
 beforeEach(async () => {
-  app = await NestFactory.create(AppModule, { logger: false });
-  configureApplication(app);
+  app = await createTestApp();
   await app.listen(0, '127.0.0.1');
   base = (await app.getUrl()) + '/projects';
 });

@@ -1,0 +1,66 @@
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "cjs"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum ProjectStatus {
+  draft
+  active
+  completed
+}
+
+enum TaskStatus {
+  todo
+  in_progress
+  done
+}
+
+enum MembershipRole {
+  owner
+  member
+}
+
+model Project {
+  id          Int           @id @default(autoincrement())
+  name        String        @unique @db.VarChar(100)
+  description String        @default("") @db.VarChar(500)
+  status      ProjectStatus @default(draft)
+  createdAt   DateTime      @default(now()) @db.Timestamptz(3)
+  tasks       Task[]
+  memberships Membership[]
+}
+
+model User {
+  id          Int          @id @default(autoincrement())
+  email       String       @unique @db.VarChar(254)
+  name        String       @db.VarChar(100)
+  memberships Membership[]
+}
+
+model Task {
+  id        Int        @id @default(autoincrement())
+  projectId Int
+  project   Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  title     String     @db.VarChar(150)
+  status    TaskStatus @default(todo)
+  dueDate   DateTime?  @db.Date
+
+  @@index([projectId, status])
+}
+
+model Membership {
+  id        Int            @id @default(autoincrement())
+  projectId Int
+  userId    Int
+  project   Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role      MembershipRole @default(member)
+
+  @@unique([projectId, userId])
+  @@index([userId])
+}

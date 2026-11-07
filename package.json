@@ -3,28 +3,37 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "prisma generate && tsc -p tsconfig.json",
     "start": "node dist/main.js",
     "test": "npm run build && node --test test/*.test.cjs",
     "openapi:generate": "npm run build && node dist/openapi/export-openapi.js",
-    "openapi:lint": "redocly lint openapi.json"
+    "openapi:lint": "redocly lint openapi.json",
+    "db:migrate": "prisma migrate deploy",
+    "db:seed": "npm run build && prisma db seed",
+    "test:postgres": "npm run build && node --test test/postgres.integration.cjs"
   },
   "engines": {
-    "node": ">=20"
+    "node": "^20.19.0 || ^22.12.0 || >=24.0.0"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.0",
     "@nestjs/core": "^11.0.0",
     "@nestjs/platform-express": "^11.0.0",
     "@nestjs/swagger": "^11.4.8",
+    "@prisma/adapter-pg": "^7.10.1",
+    "@prisma/client": "^7.10.1",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.15.1",
+    "dotenv": "^18.0.9",
+    "pg": "^8.23.1",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.2"
   },
   "devDependencies": {
+    "@nestjs/testing": "^11.2.8",
     "@redocly/cli": "^2.76.0",
     "@types/node": "^22.0.0",
+    "prisma": "^7.10.1",
     "typescript": "^5.9.3"
   }
 }

@@ -2,14 +2,11 @@ require('reflect-metadata');
 const assert = require('node:assert/strict');
 const { readFile } = require('node:fs/promises');
 const { test } = require('node:test');
-const { NestFactory } = require('@nestjs/core');
-const { AppModule } = require('../dist/app.module.js');
-const { configureApplication } = require('../dist/main.js');
+const { createTestApp } = require('./create-test-app.cjs');
 
 test('Swagger UI and live OpenAPI match the checked-in contract and its examples', async () => {
-  const app = await NestFactory.create(AppModule, { logger: false });
+  const app = await createTestApp();
   try {
-    configureApplication(app);
     await app.listen(0, '127.0.0.1');
     const base = await app.getUrl();
 
