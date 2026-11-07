@@ -1,6 +1,6 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
-import { IsEnum, IsString, Length, MaxLength, ValidateIf } from 'class-validator';
+import { IsEnum, IsInt, IsString, Length, Max, MaxLength, Min, ValidateIf } from 'class-validator';
 import { ProjectStatus } from '../projects.repository';
 
 export class CreateProjectDto {
@@ -15,10 +15,16 @@ export class CreateProjectDto {
   @Transform(({ value }: { value: unknown }) => typeof value === 'string' ? value.trim() : value)
   @IsString()
   @MaxLength(500)
-  @ApiProperty({ maxLength: 500, example: 'Система керування навчальними проєктами', default: '' })
+  @ApiPropertyOptional({ maxLength: 500, example: 'Система керування навчальними проєктами', default: '' })
   description?: string;
 
   @IsEnum(ProjectStatus)
   @ApiProperty({ enum: ProjectStatus, enumName: 'ProjectStatus', example: ProjectStatus.Active })
   status!: ProjectStatus;
+
+  @ApiProperty({ type: 'integer', minimum: 1, maximum: 2147483647, example: 1 })
+  @IsInt()
+  @Min(1)
+  @Max(2147483647)
+  ownerId!: number;
 }

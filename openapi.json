@@ -1,7 +1,7 @@
 {
   "openapi": "3.0.0",
   "paths": {
-    "/projects": {
+    "/api/projects": {
       "post": {
         "operationId": "createProject",
         "parameters": [],
@@ -17,7 +17,8 @@
                   "value": {
                     "name": "StudyFlow",
                     "description": "Система керування навчальними проєктами",
-                    "status": "active"
+                    "status": "active",
+                    "ownerId": 1
                   }
                 }
               }
@@ -64,7 +65,38 @@
                       "statusCode": 400,
                       "errorCode": "VALIDATION_ERROR",
                       "message": "name must be longer than or equal to 3 characters",
-                      "path": "/projects",
+                      "path": "/api/projects",
+                      "timestamp": "2026-09-23T10:00:00.000Z",
+                      "traceId": "550e8400-e29b-41d4-a716-446655440000"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Owner does not exist.",
+            "headers": {
+              "X-Trace-Id": {
+                "description": "Matches traceId in the response body.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpErrorResponseDto"
+                },
+                "examples": {
+                  "OWNER_NOT_FOUND": {
+                    "value": {
+                      "statusCode": 404,
+                      "errorCode": "OWNER_NOT_FOUND",
+                      "message": "User with id 999 was not found",
+                      "path": "/api/projects",
                       "timestamp": "2026-09-23T10:00:00.000Z",
                       "traceId": "550e8400-e29b-41d4-a716-446655440000"
                     }
@@ -74,7 +106,7 @@
             }
           },
           "409": {
-            "description": "The name is already in use.",
+            "description": "Project name or membership conflict.",
             "headers": {
               "X-Trace-Id": {
                 "description": "Matches traceId in the response body.",
@@ -95,7 +127,17 @@
                       "statusCode": 409,
                       "errorCode": "PROJECT_NAME_CONFLICT",
                       "message": "Project with this name already exists",
-                      "path": "/projects",
+                      "path": "/api/projects",
+                      "timestamp": "2026-09-23T10:00:00.000Z",
+                      "traceId": "550e8400-e29b-41d4-a716-446655440000"
+                    }
+                  },
+                  "MEMBERSHIP_ALREADY_EXISTS": {
+                    "value": {
+                      "statusCode": 409,
+                      "errorCode": "MEMBERSHIP_ALREADY_EXISTS",
+                      "message": "Користувач уже є учасником проєкту",
+                      "path": "/api/projects",
                       "timestamp": "2026-09-23T10:00:00.000Z",
                       "traceId": "550e8400-e29b-41d4-a716-446655440000"
                     }
@@ -126,7 +168,7 @@
                       "statusCode": 500,
                       "errorCode": "INTERNAL_SERVER_ERROR",
                       "message": "Internal server error",
-                      "path": "/projects",
+                      "path": "/api/projects",
                       "timestamp": "2026-09-23T10:00:00.000Z",
                       "traceId": "550e8400-e29b-41d4-a716-446655440000"
                     }
@@ -143,27 +185,134 @@
       },
       "get": {
         "operationId": "listProjects",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 9007199254740991,
+              "default": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "name": "size",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 10,
+              "type": "integer"
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/ProjectStatus"
+            }
+          },
+          {
+            "name": "assigneeId",
+            "required": false,
+            "in": "query",
+            "description": "User ID of the owner (responsible user).",
+            "schema": {
+              "minimum": 1,
+              "maximum": 2147483647,
+              "type": "integer"
+            }
+          },
+          {
+            "name": "sort",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": "createdAt",
+              "type": "string",
+              "enum": [
+                "createdAt",
+                "updatedAt",
+                "name"
+              ]
+            }
+          },
+          {
+            "name": "order",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": "desc",
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ]
+            }
+          }
+        ],
         "responses": {
           "200": {
-            "description": "Projects ordered by ascending ID. An empty list is returned when there are no projects.",
+            "description": "Filtered project page and navigation metadata. Out-of-range pages have empty data.",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/ProjectResponseDto"
-                  }
+                  "$ref": "#/components/schemas/ProjectPageDto"
                 },
-                "example": [
-                  {
-                    "id": 10,
-                    "name": "StudyFlow",
-                    "description": "Система керування навчальними проєктами",
-                    "status": "active",
-                    "createdAt": "2026-09-23T10:00:00.000Z"
+                "example": {
+                  "data": [
+                    {
+                      "id": 10,
+                      "name": "StudyFlow",
+                      "description": "Система керування навчальними проєктами",
+                      "status": "active",
+                      "createdAt": "2026-09-23T10:00:00.000Z"
+                    }
+                  ],
+                  "meta": {
+                    "page": 1,
+                    "size": 10,
+                    "total": 1,
+                    "totalPages": 1,
+                    "hasNextPage": false,
+                    "hasPreviousPage": false
                   }
-                ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid query parameters.",
+            "headers": {
+              "X-Trace-Id": {
+                "description": "Matches traceId in the response body.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpErrorResponseDto"
+                },
+                "examples": {
+                  "VALIDATION_ERROR": {
+                    "value": {
+                      "statusCode": 400,
+                      "errorCode": "VALIDATION_ERROR",
+                      "message": "name must be longer than or equal to 3 characters",
+                      "path": "/api/projects?page=0",
+                      "timestamp": "2026-09-23T10:00:00.000Z",
+                      "traceId": "550e8400-e29b-41d4-a716-446655440000"
+                    }
+                  }
+                }
               }
             }
           },
@@ -189,7 +338,7 @@
                       "statusCode": 500,
                       "errorCode": "INTERNAL_SERVER_ERROR",
                       "message": "Internal server error",
-                      "path": "/projects",
+                      "path": "/api/projects",
                       "timestamp": "2026-09-23T10:00:00.000Z",
                       "traceId": "550e8400-e29b-41d4-a716-446655440000"
                     }
@@ -205,7 +354,196 @@
         ]
       }
     },
-    "/projects/{id}": {
+    "/api/projects/{id}/memberships": {
+      "post": {
+        "operationId": "addProjectMember",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Positive safe integer project ID.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991,
+              "example": 10
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddMembershipDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Member added.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MembershipResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid IDs or body.",
+            "headers": {
+              "X-Trace-Id": {
+                "description": "Matches traceId in the response body.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpErrorResponseDto"
+                },
+                "examples": {
+                  "INVALID_PROJECT_ID": {
+                    "value": {
+                      "statusCode": 400,
+                      "errorCode": "INVALID_PROJECT_ID",
+                      "message": "Project id must be a positive safe integer",
+                      "path": "/api/projects/abc",
+                      "timestamp": "2026-09-23T10:00:00.000Z",
+                      "traceId": "550e8400-e29b-41d4-a716-446655440000"
+                    }
+                  },
+                  "VALIDATION_ERROR": {
+                    "value": {
+                      "statusCode": 400,
+                      "errorCode": "VALIDATION_ERROR",
+                      "message": "name must be longer than or equal to 3 characters",
+                      "path": "/api/projects/10/memberships",
+                      "timestamp": "2026-09-23T10:00:00.000Z",
+                      "traceId": "550e8400-e29b-41d4-a716-446655440000"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Project or user does not exist.",
+            "headers": {
+              "X-Trace-Id": {
+                "description": "Matches traceId in the response body.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpErrorResponseDto"
+                },
+                "examples": {
+                  "PROJECT_NOT_FOUND": {
+                    "value": {
+                      "statusCode": 404,
+                      "errorCode": "PROJECT_NOT_FOUND",
+                      "message": "Project with id 10 was not found",
+                      "path": "/api/projects/10/memberships",
+                      "timestamp": "2026-09-23T10:00:00.000Z",
+                      "traceId": "550e8400-e29b-41d4-a716-446655440000"
+                    }
+                  },
+                  "MEMBERSHIP_REFERENCE_NOT_FOUND": {
+                    "value": {
+                      "statusCode": 404,
+                      "errorCode": "MEMBERSHIP_REFERENCE_NOT_FOUND",
+                      "message": "Project or user was not found",
+                      "path": "/api/projects/10/memberships",
+                      "timestamp": "2026-09-23T10:00:00.000Z",
+                      "traceId": "550e8400-e29b-41d4-a716-446655440000"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "User already belongs to this project.",
+            "headers": {
+              "X-Trace-Id": {
+                "description": "Matches traceId in the response body.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpErrorResponseDto"
+                },
+                "examples": {
+                  "MEMBERSHIP_ALREADY_EXISTS": {
+                    "value": {
+                      "statusCode": 409,
+                      "errorCode": "MEMBERSHIP_ALREADY_EXISTS",
+                      "message": "Користувач уже є учасником проєкту",
+                      "path": "/api/projects/10/memberships",
+                      "timestamp": "2026-09-23T10:00:00.000Z",
+                      "traceId": "550e8400-e29b-41d4-a716-446655440000"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected server error.",
+            "headers": {
+              "X-Trace-Id": {
+                "description": "Matches traceId in the response body.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpErrorResponseDto"
+                },
+                "examples": {
+                  "INTERNAL_SERVER_ERROR": {
+                    "value": {
+                      "statusCode": 500,
+                      "errorCode": "INTERNAL_SERVER_ERROR",
+                      "message": "Internal server error",
+                      "path": "/api/projects/10/memberships",
+                      "timestamp": "2026-09-23T10:00:00.000Z",
+                      "traceId": "550e8400-e29b-41d4-a716-446655440000"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary": "Add a project member",
+        "tags": [
+          "Projects"
+        ]
+      }
+    },
+    "/api/projects/{id}": {
       "get": {
         "operationId": "getProject",
         "parameters": [
@@ -262,7 +600,7 @@
                       "statusCode": 400,
                       "errorCode": "INVALID_PROJECT_ID",
                       "message": "Project id must be a positive safe integer",
-                      "path": "/projects/abc",
+                      "path": "/api/projects/abc",
                       "timestamp": "2026-09-23T10:00:00.000Z",
                       "traceId": "550e8400-e29b-41d4-a716-446655440000"
                     }
@@ -293,7 +631,7 @@
                       "statusCode": 404,
                       "errorCode": "PROJECT_NOT_FOUND",
                       "message": "Project with id 10 was not found",
-                      "path": "/projects/10",
+                      "path": "/api/projects/10",
                       "timestamp": "2026-09-23T10:00:00.000Z",
                       "traceId": "550e8400-e29b-41d4-a716-446655440000"
                     }
@@ -324,7 +662,7 @@
                       "statusCode": 500,
                       "errorCode": "INTERNAL_SERVER_ERROR",
                       "message": "Internal server error",
-                      "path": "/projects/10",
+                      "path": "/api/projects/10",
                       "timestamp": "2026-09-23T10:00:00.000Z",
                       "traceId": "550e8400-e29b-41d4-a716-446655440000"
                     }
@@ -412,7 +750,7 @@
                       "statusCode": 400,
                       "errorCode": "INVALID_PROJECT_ID",
                       "message": "Project id must be a positive safe integer",
-                      "path": "/projects/abc",
+                      "path": "/api/projects/abc",
                       "timestamp": "2026-09-23T10:00:00.000Z",
                       "traceId": "550e8400-e29b-41d4-a716-446655440000"
                     }
@@ -422,7 +760,7 @@
                       "statusCode": 400,
                       "errorCode": "VALIDATION_ERROR",
                       "message": "name must be longer than or equal to 3 characters",
-                      "path": "/projects/10",
+                      "path": "/api/projects/10",
                       "timestamp": "2026-09-23T10:00:00.000Z",
                       "traceId": "550e8400-e29b-41d4-a716-446655440000"
                     }
@@ -453,7 +791,7 @@
                       "statusCode": 404,
                       "errorCode": "PROJECT_NOT_FOUND",
                       "message": "Project with id 10 was not found",
-                      "path": "/projects/10",
+                      "path": "/api/projects/10",
                       "timestamp": "2026-09-23T10:00:00.000Z",
                       "traceId": "550e8400-e29b-41d4-a716-446655440000"
                     }
@@ -484,7 +822,7 @@
                       "statusCode": 409,
                       "errorCode": "PROJECT_NAME_CONFLICT",
                       "message": "Project with this name already exists",
-                      "path": "/projects/10",
+                      "path": "/api/projects/10",
                       "timestamp": "2026-09-23T10:00:00.000Z",
                       "traceId": "550e8400-e29b-41d4-a716-446655440000"
                     }
@@ -515,7 +853,7 @@
                       "statusCode": 500,
                       "errorCode": "INTERNAL_SERVER_ERROR",
                       "message": "Internal server error",
-                      "path": "/projects/10",
+                      "path": "/api/projects/10",
                       "timestamp": "2026-09-23T10:00:00.000Z",
                       "traceId": "550e8400-e29b-41d4-a716-446655440000"
                     }
@@ -572,7 +910,7 @@
                       "statusCode": 400,
                       "errorCode": "INVALID_PROJECT_ID",
                       "message": "Project id must be a positive safe integer",
-                      "path": "/projects/abc",
+                      "path": "/api/projects/abc",
                       "timestamp": "2026-09-23T10:00:00.000Z",
                       "traceId": "550e8400-e29b-41d4-a716-446655440000"
                     }
@@ -603,7 +941,7 @@
                       "statusCode": 404,
                       "errorCode": "PROJECT_NOT_FOUND",
                       "message": "Project with id 10 was not found",
-                      "path": "/projects/10",
+                      "path": "/api/projects/10",
                       "timestamp": "2026-09-23T10:00:00.000Z",
                       "traceId": "550e8400-e29b-41d4-a716-446655440000"
                     }
@@ -634,7 +972,7 @@
                       "statusCode": 500,
                       "errorCode": "INTERNAL_SERVER_ERROR",
                       "message": "Internal server error",
-                      "path": "/projects/10",
+                      "path": "/api/projects/10",
                       "timestamp": "2026-09-23T10:00:00.000Z",
                       "traceId": "550e8400-e29b-41d4-a716-446655440000"
                     }
@@ -772,6 +1110,62 @@
         ],
         "additionalProperties": false
       },
+      "ProjectPageMetaDto": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "size": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          },
+          "total": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "totalPages": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "hasNextPage": {
+            "type": "boolean"
+          },
+          "hasPreviousPage": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "page",
+          "size",
+          "total",
+          "totalPages",
+          "hasNextPage",
+          "hasPreviousPage"
+        ],
+        "additionalProperties": false
+      },
+      "ProjectPageDto": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProjectResponseDto"
+            }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ProjectPageMetaDto"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ],
+        "additionalProperties": false
+      },
       "CreateProjectDto": {
         "type": "object",
         "properties": {
@@ -795,12 +1189,61 @@
                 "$ref": "#/components/schemas/ProjectStatus"
               }
             ]
+          },
+          "ownerId": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647,
+            "example": 1
           }
         },
         "required": [
           "name",
-          "description",
-          "status"
+          "status",
+          "ownerId"
+        ],
+        "additionalProperties": false
+      },
+      "AddMembershipDto": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647,
+            "example": 2
+          }
+        },
+        "required": [
+          "userId"
+        ],
+        "additionalProperties": false
+      },
+      "MembershipResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "projectId": {
+            "type": "integer"
+          },
+          "userId": {
+            "type": "integer"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "owner",
+              "member"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "projectId",
+          "userId",
+          "role"
         ],
         "additionalProperties": false
       },

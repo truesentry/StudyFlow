@@ -31,8 +31,12 @@ model Project {
   description String        @default("") @db.VarChar(500)
   status      ProjectStatus @default(draft)
   createdAt   DateTime      @default(now()) @db.Timestamptz(3)
+  updatedAt   DateTime      @default(now()) @updatedAt @db.Timestamptz(3)
   tasks       Task[]
   memberships Membership[]
+
+  @@index([createdAt, id])
+  @@index([updatedAt, id])
 }
 
 model User {

@@ -26,7 +26,7 @@ function send(method = 'GET', path = '', body) {
   const options = body === undefined ? { method } : {
     method,
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify(body),
+    body: JSON.stringify(method === 'POST' && body && !Array.isArray(body) ? { ownerId: 1, ...body } : body),
   };
   return fetch(base + path, options);
 }
@@ -53,7 +53,7 @@ async function create(name = 'StudyFlow', fields = {}) {
 }
 
 test('HTTP CRUD and transformation of DTOs and numeric id', async () => {
-  assert.deepEqual(await (await send()).json(), []);
+  assert.deepEqual((await (await send()).json()).data, []);
   const service = app.get(ProjectsService);
   const originalCreate = service.create.bind(service);
   service.create = (dto) => {
@@ -75,7 +75,7 @@ test('HTTP CRUD and transformation of DTOs and numeric id', async () => {
     return originalFindOne(id);
   };
   assert.deepEqual(await (await send('GET', path)).json(), project);
-  assert.deepEqual(await (await send()).json(), [project]);
+  assert.deepEqual((await (await send()).json()).data, [project]);
 
   const originalUpdate = service.update.bind(service);
   service.update = (id, dto) => {
@@ -97,7 +97,7 @@ test('HTTP CRUD and transformation of DTOs and numeric id', async () => {
 
 test('POST validates required fields, enum, types and lengths', async () => {
   for (const body of [
-    {}, { name: 'Valid' }, { status: 'active' },
+    {}, { name: 'Valid' }, { status: 'active' }, { name: 'Valid', status: 'active', ownerId: null },
     { name: 'ab', status: 'active' }, { name: '   ', status: 'active' },
     { name: 'a'.repeat(101), status: 'active' },
     { name: 123, status: 'active' }, { name: null, status: 'active' },
@@ -109,7 +109,7 @@ test('POST validates required fields, enum, types and lengths', async () => {
   ]) {
     await expectError(await send('POST', '', body), 400, 'VALIDATION_ERROR', '/projects');
   }
-  assert.deepEqual(await (await send()).json(), []);
+  assert.deepEqual((await (await send()).json()).data, []);
 });
 
 test('POST accepts length boundaries and all statuses', async () => {
@@ -127,7 +127,7 @@ test('Unknown and server-managed fields are forbidden in POST and PATCH', async 
     await expectError(await send('POST', '', { name: 'Another', status: 'draft', ...extra }), 400, 'VALIDATION_ERROR', '/projects');
     await expectError(await send('PATCH', '/' + project.id, extra), 400, 'VALIDATION_ERROR', '/projects/' + project.id);
   }
-  assert.deepEqual(await (await send()).json(), [project]);
+  assert.deepEqual((await (await send()).json()).data, [project]);
 });
 
 test('PATCH validates supplied values atomically and preserves omitted fields', async () => {
@@ -167,7 +167,7 @@ test('Concurrent duplicate POST requests cannot store the same name twice', asyn
   ]);
   assert.deepEqual(responses.map((r) => r.status).sort(), [201, 409]);
   await expectError(responses.find((r) => r.status === 409), 409, 'PROJECT_NAME_CONFLICT', '/projects');
-  assert.equal((await (await send()).json()).length, 1);
+  assert.equal((await (await send()).json()).data.length, 1);
 });
 
 test('Concurrent renames enforce uniqueness at the repository boundary', async () => {
@@ -178,7 +178,7 @@ test('Concurrent renames enforce uniqueness at the repository boundary', async (
     send('PATCH', '/' + second.id, { name: 'Shared' }),
   ]);
   assert.deepEqual(responses.map((r) => r.status).sort(), [200, 409]);
-  const items = await (await send()).json();
+  const { data: items } = await (await send()).json();
   assert.equal(items.filter((item) => item.name === 'Shared').length, 1);
 });
 
@@ -204,10 +204,13 @@ test('Serialization excludes internal fields from POST, list, GET and PATCH', as
     repository[method] = async (...args) => withSecrets(await original(...args));
   }
   const originalFindAll = repository.findAll.bind(repository);
-  repository.findAll = async () => (await originalFindAll()).map(withSecrets);
+  repository.findAll = async (...args) => {
+    const { data, total } = await originalFindAll(...args);
+    return { data: data.map(withSecrets), total };
+  };
   const project = await create();
   const one = await (await send('GET', '/' + project.id)).json();
-  const list = await (await send()).json();
+  const { data: list } = await (await send()).json();
   const update = await send('PATCH', '/' + project.id, { status: 'completed' });
   assert.equal(update.status, 200);
   for (const result of [project, one, ...list, await update.json()]) {

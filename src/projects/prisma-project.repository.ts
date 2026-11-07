@@ -1,7 +1,7 @@
 import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { createPrismaClient } from '../database/prisma-client';
 import { Prisma, type PrismaClient, type Project as StoredProject } from '../generated/prisma/client';
-import { DuplicateProjectNameError, ProjectStatus, type Project, type ProjectFields, type ProjectsRepository } from './projects.repository';
+import { DuplicateMembershipError, DuplicateProjectNameError, MembershipReferenceError, ProjectStatus, type Project, type ProjectFields, type ProjectListOptions, type ProjectsRepository } from './projects.repository';
 
 const projectStatuses = {
   draft: ProjectStatus.Draft,
@@ -42,17 +42,49 @@ export class PrismaProjectRepository implements ProjectsRepository, OnModuleInit
     await this.client?.$disconnect();
   }
 
-  async create(fields: ProjectFields): Promise<Project> {
-    try {
-      return toProject(await this.db.project.create({ data: fields }));
-    } catch (error) {
-      if (isPrismaError(error, 'P2002')) throw new DuplicateProjectNameError();
-      throw error;
-    }
+  async create(fields: ProjectFields, ownerId: number): Promise<Project> {
+    return this.db.$transaction(async (tx) => {
+      let row: StoredProject;
+      try {
+        row = await tx.project.create({ data: fields });
+      } catch (error) {
+        if (isPrismaError(error, 'P2002')) throw new DuplicateProjectNameError();
+        throw error;
+      }
+      await this.insertMembership(tx, row.id, ownerId, 'owner');
+      return toProject(row);
+    });
   }
 
-  async findAll(): Promise<Project[]> {
-    return (await this.db.project.findMany({ orderBy: { id: 'asc' } })).map(toProject);
+  async findAll(options: ProjectListOptions) {
+    const { page, size, status, assigneeId, sort, order } = options;
+    const where: Prisma.ProjectWhereInput = {
+      status,
+      ...(assigneeId === undefined ? {} : { memberships: { some: { userId: assigneeId, role: 'owner' } } }),
+    };
+    return this.db.$transaction(async (tx) => {
+      const total = await tx.project.count({ where });
+      const skip = (page - 1) * size;
+      if (skip >= total) return { data: [], total };
+      const rows = await tx.project.findMany({
+        where, skip, take: size, orderBy: [{ [sort]: order }, { id: order }],
+      });
+      return { data: rows.map(toProject), total };
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead });
+  }
+
+  addMember(projectId: number, userId: number) {
+    return this.insertMembership(this.db, projectId, userId, 'member');
+  }
+
+  private async insertMembership(db: Prisma.TransactionClient, projectId: number, userId: number, role: 'owner' | 'member') {
+    try {
+      return await db.membership.create({ data: { projectId, userId, role } });
+    } catch (error) {
+      if (isPrismaError(error, 'P2002')) throw new DuplicateMembershipError();
+      if (isPrismaError(error, 'P2003')) throw new MembershipReferenceError();
+      throw error;
+    }
   }
 
   async findOne(id: number): Promise<Project | null> {
