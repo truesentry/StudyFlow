@@ -1,6 +1,7 @@
 import 'reflect-metadata';
 import { ClassSerializerInterceptor, type INestApplication, ValidationPipe } from '@nestjs/common';
 import { NestFactory, Reflector } from '@nestjs/core';
+import { setupOpenApi } from './openapi/openapi';
 import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './common/http-exception.filter';
 
@@ -15,6 +16,7 @@ export function configureApplication(app: INestApplication): void {
   );
   app.useGlobalInterceptors(new ClassSerializerInterceptor(app.get(Reflector)));
   app.useGlobalFilters(new HttpExceptionFilter());
+  setupOpenApi(app);
 }
 
 async function bootstrap(): Promise<void> {

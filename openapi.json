@@ -1,0 +1,841 @@
+{
+  "openapi": "3.0.0",
+  "paths": {
+    "/projects": {
+      "post": {
+        "operationId": "createProject",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateProjectDto"
+              },
+              "examples": {
+                "activeProject": {
+                  "value": {
+                    "name": "StudyFlow",
+                    "description": "Система керування навчальними проєктами",
+                    "status": "active"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The project was created.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectResponseDto"
+                },
+                "example": {
+                  "id": 10,
+                  "name": "StudyFlow",
+                  "description": "Система керування навчальними проєктами",
+                  "status": "active",
+                  "createdAt": "2026-09-23T10:00:00.000Z"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid JSON or request fields.",
+            "headers": {
+              "X-Trace-Id": {
+                "description": "Matches traceId in the response body.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpErrorResponseDto"
+                },
+                "examples": {
+                  "VALIDATION_ERROR": {
+                    "value": {
+                      "statusCode": 400,
+                      "errorCode": "VALIDATION_ERROR",
+                      "message": "name must be longer than or equal to 3 characters",
+                      "path": "/projects",
+                      "timestamp": "2026-09-23T10:00:00.000Z",
+                      "traceId": "550e8400-e29b-41d4-a716-446655440000"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The name is already in use.",
+            "headers": {
+              "X-Trace-Id": {
+                "description": "Matches traceId in the response body.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpErrorResponseDto"
+                },
+                "examples": {
+                  "PROJECT_NAME_CONFLICT": {
+                    "value": {
+                      "statusCode": 409,
+                      "errorCode": "PROJECT_NAME_CONFLICT",
+                      "message": "Project with this name already exists",
+                      "path": "/projects",
+                      "timestamp": "2026-09-23T10:00:00.000Z",
+                      "traceId": "550e8400-e29b-41d4-a716-446655440000"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected server error.",
+            "headers": {
+              "X-Trace-Id": {
+                "description": "Matches traceId in the response body.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpErrorResponseDto"
+                },
+                "examples": {
+                  "INTERNAL_SERVER_ERROR": {
+                    "value": {
+                      "statusCode": 500,
+                      "errorCode": "INTERNAL_SERVER_ERROR",
+                      "message": "Internal server error",
+                      "path": "/projects",
+                      "timestamp": "2026-09-23T10:00:00.000Z",
+                      "traceId": "550e8400-e29b-41d4-a716-446655440000"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary": "Create a project",
+        "tags": [
+          "Projects"
+        ]
+      },
+      "get": {
+        "operationId": "listProjects",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Projects ordered by ascending ID. An empty list is returned when there are no projects.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ProjectResponseDto"
+                  }
+                },
+                "example": [
+                  {
+                    "id": 10,
+                    "name": "StudyFlow",
+                    "description": "Система керування навчальними проєктами",
+                    "status": "active",
+                    "createdAt": "2026-09-23T10:00:00.000Z"
+                  }
+                ]
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected server error.",
+            "headers": {
+              "X-Trace-Id": {
+                "description": "Matches traceId in the response body.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpErrorResponseDto"
+                },
+                "examples": {
+                  "INTERNAL_SERVER_ERROR": {
+                    "value": {
+                      "statusCode": 500,
+                      "errorCode": "INTERNAL_SERVER_ERROR",
+                      "message": "Internal server error",
+                      "path": "/projects",
+                      "timestamp": "2026-09-23T10:00:00.000Z",
+                      "traceId": "550e8400-e29b-41d4-a716-446655440000"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary": "List projects",
+        "tags": [
+          "Projects"
+        ]
+      }
+    },
+    "/projects/{id}": {
+      "get": {
+        "operationId": "getProject",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Positive safe integer project ID.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991,
+              "example": 10
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The requested project.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectResponseDto"
+                },
+                "example": {
+                  "id": 10,
+                  "name": "StudyFlow",
+                  "description": "Система керування навчальними проєктами",
+                  "status": "active",
+                  "createdAt": "2026-09-23T10:00:00.000Z"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid project ID.",
+            "headers": {
+              "X-Trace-Id": {
+                "description": "Matches traceId in the response body.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpErrorResponseDto"
+                },
+                "examples": {
+                  "INVALID_PROJECT_ID": {
+                    "value": {
+                      "statusCode": 400,
+                      "errorCode": "INVALID_PROJECT_ID",
+                      "message": "Project id must be a positive safe integer",
+                      "path": "/projects/abc",
+                      "timestamp": "2026-09-23T10:00:00.000Z",
+                      "traceId": "550e8400-e29b-41d4-a716-446655440000"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Project not found.",
+            "headers": {
+              "X-Trace-Id": {
+                "description": "Matches traceId in the response body.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpErrorResponseDto"
+                },
+                "examples": {
+                  "PROJECT_NOT_FOUND": {
+                    "value": {
+                      "statusCode": 404,
+                      "errorCode": "PROJECT_NOT_FOUND",
+                      "message": "Project with id 10 was not found",
+                      "path": "/projects/10",
+                      "timestamp": "2026-09-23T10:00:00.000Z",
+                      "traceId": "550e8400-e29b-41d4-a716-446655440000"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected server error.",
+            "headers": {
+              "X-Trace-Id": {
+                "description": "Matches traceId in the response body.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpErrorResponseDto"
+                },
+                "examples": {
+                  "INTERNAL_SERVER_ERROR": {
+                    "value": {
+                      "statusCode": 500,
+                      "errorCode": "INTERNAL_SERVER_ERROR",
+                      "message": "Internal server error",
+                      "path": "/projects/10",
+                      "timestamp": "2026-09-23T10:00:00.000Z",
+                      "traceId": "550e8400-e29b-41d4-a716-446655440000"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary": "Get a project by ID",
+        "tags": [
+          "Projects"
+        ]
+      },
+      "patch": {
+        "operationId": "updateProject",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Positive safe integer project ID.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991,
+              "example": 10
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateProjectDto"
+              },
+              "examples": {
+                "completeProject": {
+                  "value": {
+                    "status": "completed"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The project after applying the supplied changes.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectResponseDto"
+                },
+                "example": {
+                  "id": 10,
+                  "name": "StudyFlow",
+                  "description": "Система керування навчальними проєктами",
+                  "status": "completed",
+                  "createdAt": "2026-09-23T10:00:00.000Z"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid project ID, JSON or request fields.",
+            "headers": {
+              "X-Trace-Id": {
+                "description": "Matches traceId in the response body.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpErrorResponseDto"
+                },
+                "examples": {
+                  "INVALID_PROJECT_ID": {
+                    "value": {
+                      "statusCode": 400,
+                      "errorCode": "INVALID_PROJECT_ID",
+                      "message": "Project id must be a positive safe integer",
+                      "path": "/projects/abc",
+                      "timestamp": "2026-09-23T10:00:00.000Z",
+                      "traceId": "550e8400-e29b-41d4-a716-446655440000"
+                    }
+                  },
+                  "VALIDATION_ERROR": {
+                    "value": {
+                      "statusCode": 400,
+                      "errorCode": "VALIDATION_ERROR",
+                      "message": "name must be longer than or equal to 3 characters",
+                      "path": "/projects/10",
+                      "timestamp": "2026-09-23T10:00:00.000Z",
+                      "traceId": "550e8400-e29b-41d4-a716-446655440000"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Project not found.",
+            "headers": {
+              "X-Trace-Id": {
+                "description": "Matches traceId in the response body.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpErrorResponseDto"
+                },
+                "examples": {
+                  "PROJECT_NOT_FOUND": {
+                    "value": {
+                      "statusCode": 404,
+                      "errorCode": "PROJECT_NOT_FOUND",
+                      "message": "Project with id 10 was not found",
+                      "path": "/projects/10",
+                      "timestamp": "2026-09-23T10:00:00.000Z",
+                      "traceId": "550e8400-e29b-41d4-a716-446655440000"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The name is already in use by another project.",
+            "headers": {
+              "X-Trace-Id": {
+                "description": "Matches traceId in the response body.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpErrorResponseDto"
+                },
+                "examples": {
+                  "PROJECT_NAME_CONFLICT": {
+                    "value": {
+                      "statusCode": 409,
+                      "errorCode": "PROJECT_NAME_CONFLICT",
+                      "message": "Project with this name already exists",
+                      "path": "/projects/10",
+                      "timestamp": "2026-09-23T10:00:00.000Z",
+                      "traceId": "550e8400-e29b-41d4-a716-446655440000"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected server error.",
+            "headers": {
+              "X-Trace-Id": {
+                "description": "Matches traceId in the response body.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpErrorResponseDto"
+                },
+                "examples": {
+                  "INTERNAL_SERVER_ERROR": {
+                    "value": {
+                      "statusCode": 500,
+                      "errorCode": "INTERNAL_SERVER_ERROR",
+                      "message": "Internal server error",
+                      "path": "/projects/10",
+                      "timestamp": "2026-09-23T10:00:00.000Z",
+                      "traceId": "550e8400-e29b-41d4-a716-446655440000"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary": "Partially update a project",
+        "tags": [
+          "Projects"
+        ]
+      },
+      "delete": {
+        "operationId": "deleteProject",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Positive safe integer project ID.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991,
+              "example": 10
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Project deleted. No response body."
+          },
+          "400": {
+            "description": "Invalid project ID.",
+            "headers": {
+              "X-Trace-Id": {
+                "description": "Matches traceId in the response body.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpErrorResponseDto"
+                },
+                "examples": {
+                  "INVALID_PROJECT_ID": {
+                    "value": {
+                      "statusCode": 400,
+                      "errorCode": "INVALID_PROJECT_ID",
+                      "message": "Project id must be a positive safe integer",
+                      "path": "/projects/abc",
+                      "timestamp": "2026-09-23T10:00:00.000Z",
+                      "traceId": "550e8400-e29b-41d4-a716-446655440000"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Project not found.",
+            "headers": {
+              "X-Trace-Id": {
+                "description": "Matches traceId in the response body.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpErrorResponseDto"
+                },
+                "examples": {
+                  "PROJECT_NOT_FOUND": {
+                    "value": {
+                      "statusCode": 404,
+                      "errorCode": "PROJECT_NOT_FOUND",
+                      "message": "Project with id 10 was not found",
+                      "path": "/projects/10",
+                      "timestamp": "2026-09-23T10:00:00.000Z",
+                      "traceId": "550e8400-e29b-41d4-a716-446655440000"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected server error.",
+            "headers": {
+              "X-Trace-Id": {
+                "description": "Matches traceId in the response body.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpErrorResponseDto"
+                },
+                "examples": {
+                  "INTERNAL_SERVER_ERROR": {
+                    "value": {
+                      "statusCode": 500,
+                      "errorCode": "INTERNAL_SERVER_ERROR",
+                      "message": "Internal server error",
+                      "path": "/projects/10",
+                      "timestamp": "2026-09-23T10:00:00.000Z",
+                      "traceId": "550e8400-e29b-41d4-a716-446655440000"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary": "Delete a project",
+        "tags": [
+          "Projects"
+        ]
+      }
+    }
+  },
+  "info": {
+    "title": "StudyFlow Projects API",
+    "description": "Create, read, update and delete study projects. Projects routes are public; the Bearer scheme is declared for future use.",
+    "version": "1.0.0",
+    "contact": {}
+  },
+  "tags": [
+    {
+      "name": "Projects",
+      "description": "Manage study projects."
+    }
+  ],
+  "servers": [
+    {
+      "url": "/",
+      "description": "The host serving this API"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Reserved for future protected endpoints. Projects routes do not require a token."
+      }
+    },
+    "schemas": {
+      "HttpErrorResponseDto": {
+        "type": "object",
+        "properties": {
+          "statusCode": {
+            "type": "integer",
+            "minimum": 400,
+            "maximum": 599,
+            "example": 404
+          },
+          "errorCode": {
+            "type": "string",
+            "example": "PROJECT_NOT_FOUND"
+          },
+          "message": {
+            "type": "string",
+            "example": "Project with id 10 was not found"
+          },
+          "path": {
+            "type": "string",
+            "example": "/projects/10"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-09-23T10:00:00.000Z"
+          },
+          "traceId": {
+            "type": "string",
+            "format": "uuid",
+            "example": "550e8400-e29b-41d4-a716-446655440000"
+          }
+        },
+        "required": [
+          "statusCode",
+          "errorCode",
+          "message",
+          "path",
+          "timestamp",
+          "traceId"
+        ],
+        "additionalProperties": false
+      },
+      "ProjectStatus": {
+        "type": "string",
+        "enum": [
+          "draft",
+          "active",
+          "completed"
+        ]
+      },
+      "ProjectResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991,
+            "example": 10
+          },
+          "name": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 100,
+            "description": "Project name after trimming surrounding whitespace.",
+            "example": "StudyFlow"
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 500,
+            "example": "Система керування навчальними проєктами"
+          },
+          "status": {
+            "example": "active",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ProjectStatus"
+              }
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-09-23T10:00:00.000Z"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "description",
+          "status",
+          "createdAt"
+        ],
+        "additionalProperties": false
+      },
+      "CreateProjectDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 100,
+            "description": "Project name after trimming surrounding whitespace.",
+            "example": "StudyFlow"
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 500,
+            "example": "Система керування навчальними проєктами",
+            "default": ""
+          },
+          "status": {
+            "example": "active",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ProjectStatus"
+              }
+            ]
+          }
+        },
+        "required": [
+          "name",
+          "description",
+          "status"
+        ],
+        "additionalProperties": false
+      },
+      "UpdateProjectDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 100,
+            "description": "Project name after trimming surrounding whitespace.",
+            "example": "StudyFlow"
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 500,
+            "example": "Система керування навчальними проєктами"
+          },
+          "status": {
+            "example": "active",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ProjectStatus"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "minProperties": 1
+      }
+    }
+  },
+  "externalDocs": {
+    "description": "Practical assignment source code on GitHub",
+    "url": "https://github.com/truesentry/StudyFlow"
+  },
+  "security": []
+}

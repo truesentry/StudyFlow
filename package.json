@@ -5,7 +5,9 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "start": "node dist/main.js",
-    "test": "npm run build && node --test test/*.test.cjs"
+    "test": "npm run build && node --test test/*.test.cjs",
+    "openapi:generate": "npm run build && node dist/openapi/export-openapi.js",
+    "openapi:lint": "redocly lint openapi.json"
   },
   "engines": {
     "node": ">=20"
@@ -14,12 +16,14 @@
     "@nestjs/common": "^11.0.0",
     "@nestjs/core": "^11.0.0",
     "@nestjs/platform-express": "^11.0.0",
+    "@nestjs/swagger": "^11.4.8",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.15.1",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.2"
   },
   "devDependencies": {
+    "@redocly/cli": "^2.76.0",
     "@types/node": "^22.0.0",
     "typescript": "^5.9.3"
   }
